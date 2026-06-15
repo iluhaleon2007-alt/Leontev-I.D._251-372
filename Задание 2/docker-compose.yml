@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9001:9001"
+    container_name: game-server
+
+  client1:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    depends_on:
+      - server
+    container_name: client1
+    stdin_open: true
+    tty: true
+
+  client2:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    depends_on:
+      - server
+    container_name: client2
+    stdin_open: true
+    tty: true
+
+  client3:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    depends_on:
+      - server
+    container_name: client3
+    stdin_open: true
+    tty: true
+
+  client4:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    depends_on:
+      - server
+    container_name: client4
+    stdin_open: true
+    tty: true
+
+  client5:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    depends_on:
+      - server
+    container_name: client5
+    stdin_open: true
+    tty: true
