@@ -5,6 +5,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QVector>
+#include <QMap>
 #include <ctime>
 #include <cstdlib>
 
@@ -29,6 +30,7 @@ private:
 
     QTcpServer *mTcpServer;
     QVector<QTcpSocket*> mClients;
+    QMap<QTcpSocket*, QByteArray> mBuffers;
     int m_maxClients = 5;
     int m_targetNumber;
     int m_currentTurn = 0;

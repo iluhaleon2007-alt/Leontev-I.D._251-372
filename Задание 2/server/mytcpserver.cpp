@@ -63,57 +63,60 @@ void MyTcpServer::slotServerRead()
     QTcpSocket *mTcpSocket = qobject_cast<QTcpSocket*>(sender());
     if (!mTcpSocket) return;
 
-    QString res = "";
-    while (mTcpSocket->bytesAvailable() > 0) {
-        QByteArray array = mTcpSocket->readAll();
-        res.append(array);
-    }
-    res = res.trimmed();
-    qDebug() << "Received:" << res;
+    mBuffers[mTcpSocket].append(mTcpSocket->readAll());
 
-    if (!m_gameStarted) {
-        mTcpSocket->write("Waiting for all clients...\r\n");
-        mTcpSocket->flush();
-        return;
-    }
+    while (mBuffers[mTcpSocket].contains('\n')) {
+        int idx = mBuffers[mTcpSocket].indexOf('\n');
+        QByteArray line = mBuffers[mTcpSocket].left(idx).trimmed();
+        mBuffers[mTcpSocket].remove(0, idx + 1);
 
-    bool ok;
-    int guess = res.toInt(&ok);
-    if (!ok) {
-        mTcpSocket->write("Enter a number!\r\n");
-        mTcpSocket->flush();
-        return;
-    }
+        qDebug() << "Received:" << line;
 
-    if (mTcpSocket != mClients[m_currentTurn]) {
-        mTcpSocket->write("Not your turn!\r\n");
-        mTcpSocket->flush();
-        return;
-    }
-
-    qDebug() << "Client guessed:" << guess;
-
-    if (guess == m_targetNumber) {
-        QByteArray winMsg = "Guessed! Number: " + QByteArray::number(m_targetNumber) + "\r\n";
-        broadcast(winMsg);
-        QByteArray endMsg = "Game over. All connections closed.\r\n";
-        broadcast(endMsg);
-        qDebug() << "Number guessed! Game over.";
-
-        for (QTcpSocket *s : mClients) {
-            s->disconnectFromHost();
+        if (!m_gameStarted) {
+            mTcpSocket->write("Waiting for all clients...\r\n");
+            mTcpSocket->flush();
+            continue;
         }
-        mClients.clear();
-        m_gameStarted = false;
-    } else if (guess < m_targetNumber) {
-        mTcpSocket->write("Higher!\r\n");
-        mTcpSocket->flush();
-    } else {
-        mTcpSocket->write("Lower!\r\n");
-        mTcpSocket->flush();
-    }
 
-    nextTurn();
+        bool ok;
+        int guess = line.toInt(&ok);
+        if (!ok) {
+            mTcpSocket->write("Enter a number!\r\n");
+            mTcpSocket->flush();
+            continue;
+        }
+
+        if (mTcpSocket != mClients[m_currentTurn]) {
+            mTcpSocket->write("Not your turn!\r\n");
+            mTcpSocket->flush();
+            continue;
+        }
+
+        qDebug() << "Client guessed:" << guess;
+
+        if (guess == m_targetNumber) {
+            QByteArray winMsg = "Guessed! Number: " + QByteArray::number(m_targetNumber) + "\r\n";
+            broadcast(winMsg);
+            QByteArray endMsg = "Game over. All connections closed.\r\n";
+            broadcast(endMsg);
+            qDebug() << "Number guessed! Game over.";
+
+            for (QTcpSocket *s : mClients) {
+                s->disconnectFromHost();
+            }
+            mClients.clear();
+            mBuffers.clear();
+            m_gameStarted = false;
+        } else if (guess < m_targetNumber) {
+            mTcpSocket->write("Higher!\r\n");
+            mTcpSocket->flush();
+        } else {
+            mTcpSocket->write("Lower!\r\n");
+            mTcpSocket->flush();
+        }
+
+        nextTurn();
+    }
 }
 
 void MyTcpServer::slotClientDisconnected()
@@ -125,6 +128,7 @@ void MyTcpServer::slotClientDisconnected()
     qDebug() << "Client disconnected. Index:" << index;
 
     mClients.removeOne(mTcpSocket);
+    mBuffers.remove(mTcpSocket);
     mTcpSocket->close();
 
     broadcastClientCount();
