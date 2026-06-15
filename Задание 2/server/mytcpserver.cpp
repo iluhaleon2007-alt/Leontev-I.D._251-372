@@ -32,7 +32,7 @@ void MyTcpServer::slotNewConnection()
         QTcpSocket *mTcpSocket = mTcpServer->nextPendingConnection();
 
         if (mClients.size() >= m_maxClients) {
-            mTcpSocket->write("Сервер занят. Попробуйте подключиться позже.\r\n");
+            mTcpSocket->write("Server is busy. Try again later.\r\n");
             mTcpSocket->flush();
             mTcpSocket->disconnectFromHost();
             qDebug() << "Rejected client (server full)";
@@ -47,7 +47,7 @@ void MyTcpServer::slotNewConnection()
 
         qDebug() << "Client connected. Total:" << mClients.size();
 
-        mTcpSocket->write("Hello! Добро пожаловать! Вы подключены к серверу.\r\n");
+        mTcpSocket->write("Hello! Welcome! You are connected to the server.\r\n");
         mTcpSocket->flush();
 
         broadcastClientCount();
@@ -72,7 +72,7 @@ void MyTcpServer::slotServerRead()
     qDebug() << "Received:" << res;
 
     if (!m_gameStarted) {
-        mTcpSocket->write("Ожидание всех клиентов...\r\n");
+        mTcpSocket->write("Waiting for all clients...\r\n");
         mTcpSocket->flush();
         return;
     }
@@ -80,13 +80,13 @@ void MyTcpServer::slotServerRead()
     bool ok;
     int guess = res.toInt(&ok);
     if (!ok) {
-        mTcpSocket->write("Введите число!\r\n");
+        mTcpSocket->write("Enter a number!\r\n");
         mTcpSocket->flush();
         return;
     }
 
     if (mTcpSocket != mClients[m_currentTurn]) {
-        mTcpSocket->write("Сейчас не ваш ход!\r\n");
+        mTcpSocket->write("Not your turn!\r\n");
         mTcpSocket->flush();
         return;
     }
@@ -94,9 +94,9 @@ void MyTcpServer::slotServerRead()
     qDebug() << "Client guessed:" << guess;
 
     if (guess == m_targetNumber) {
-        QByteArray winMsg = "Угадано! Число: " + QByteArray::number(m_targetNumber) + "\r\n";
+        QByteArray winMsg = "Guessed! Number: " + QByteArray::number(m_targetNumber) + "\r\n";
         broadcast(winMsg);
-        QByteArray endMsg = "Игра окончена. Все соединения разрываются.\r\n";
+        QByteArray endMsg = "Game over. All connections closed.\r\n";
         broadcast(endMsg);
         qDebug() << "Number guessed! Game over.";
 
@@ -106,10 +106,10 @@ void MyTcpServer::slotServerRead()
         mClients.clear();
         m_gameStarted = false;
     } else if (guess < m_targetNumber) {
-        mTcpSocket->write("Больше!\r\n");
+        mTcpSocket->write("Higher!\r\n");
         mTcpSocket->flush();
     } else {
-        mTcpSocket->write("Меньше!\r\n");
+        mTcpSocket->write("Lower!\r\n");
         mTcpSocket->flush();
     }
 
@@ -152,8 +152,8 @@ void MyTcpServer::broadcast(const QString &message)
 
 void MyTcpServer::broadcastClientCount()
 {
-    QByteArray msg = "Подключено клиентов: " + QByteArray::number(mClients.size()) +
-                     " из " + QByteArray::number(m_maxClients) + "\r\n";
+    QByteArray msg = "Connected clients: " + QByteArray::number(mClients.size()) +
+                     " of " + QByteArray::number(m_maxClients) + "\r\n";
     broadcast(msg);
 }
 
@@ -164,11 +164,11 @@ void MyTcpServer::startGame()
     m_currentTurn = 0;
 
     qDebug() << "Game started! Target number:" << m_targetNumber;
-    broadcast("Все клиенты подключены! Игра начинается!\r\n");
-    broadcast("Загадано число от 1 до 100. Угадывайте по очереди!\r\n");
+    broadcast("All clients connected! Game starts!\r\n");
+    broadcast("Number from 1 to 100 is guessed. Take turns!\r\n");
 
     if (!mClients.isEmpty()) {
-        mClients[0]->write("Ваш ход! Введите число:\r\n");
+        mClients[0]->write("Your turn! Enter a number:\r\n");
         mClients[0]->flush();
     }
 }
@@ -178,6 +178,6 @@ void MyTcpServer::nextTurn()
     if (mClients.isEmpty()) return;
 
     m_currentTurn = (m_currentTurn + 1) % mClients.size();
-    mClients[m_currentTurn]->write("Ваш ход! Введите число:\r\n");
+    mClients[m_currentTurn]->write("Your turn! Enter a number:\r\n");
     mClients[m_currentTurn]->flush();
 }

@@ -14,6 +14,6 @@ COPY server/ .
 
 RUN /usr/lib64/qt5/bin/qmake && make
 
-EXPOSE 9001
+EXPOSE 33333
 
 CMD ["./server"]
